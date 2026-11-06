@@ -22,12 +22,13 @@ try {
   execFileSync(process.execPath, ['scripts/sync-theme-editor.js'], { cwd: rootDir, stdio: 'inherit' });
   // Dependencies are installed explicitly by developers/CI. Keeping installs out
   // of the build makes production artifacts deterministic and offline-buildable.
-  const executableSuffix = process.platform === 'win32' ? '.cmd' : '';
-  execFileSync(path.join(frontendDir, 'node_modules', '.bin', `tsc${executableSuffix}`), [], {
+  // Newer Node (post CVE-2024-27980) refuses to spawn .cmd/.bat shims directly;
+  // invoke the JS entry points of tsc/vite with node instead (works on all OSes).
+  execFileSync(process.execPath, [path.join(frontendDir, 'node_modules', 'typescript', 'bin', 'tsc')], {
     cwd: frontendDir,
     stdio: 'inherit',
   });
-  execFileSync(path.join(frontendDir, 'node_modules', '.bin', `vite${executableSuffix}`), ['build'], {
+  execFileSync(process.execPath, [path.join(frontendDir, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'], {
     cwd: frontendDir,
     stdio: 'inherit',
   });
