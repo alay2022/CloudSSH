@@ -16,6 +16,9 @@ REQUIRE_GITHUB_AUTH = "false"
 STRICT_HOST_KEY_VERIFY = "true"
 
 # 构建监视路径：仅源代码变动时触发重新构建
+# 跨源只读白名单：允许以下站点带着登录 cookie 读取 /api/servers（供 DNS-SUB 面板使用）
+CORS_ALLOWED_ORIGINS = "https://vip.ztvps.com"
+
 [build]
 watch_dir = "."
 

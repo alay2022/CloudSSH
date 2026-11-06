@@ -179,6 +179,48 @@ function validateRegion(v: string | null | undefined): string | undefined {
   return (ALLOWED_LOCATION_HINTS as readonly string[]).includes(v) ? v : undefined;
 }
 
+
+// ==================== 跨源只读 CORS（供受信任面板读取服务器列表） ====================
+function isCorsOriginAllowed(origin: string, env: Env): boolean {
+  return (env.CORS_ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .includes(origin);
+}
+
+function handleCorsPreflight(request: Request, env: Env): Response {
+  const origin = request.headers.get('Origin');
+  if (!origin || !isCorsOriginAllowed(origin, env)) {
+    return new Response(null, { status: 403 });
+  }
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': request.headers.get('Access-Control-Request-Headers') || '',
+      'Access-Control-Max-Age': '86400',
+      Vary: 'Origin',
+    },
+  });
+}
+
+function applyCors(response: Response, request: Request, env: Env): Response {
+  const origin = request.headers.get('Origin');
+  if (!origin || !isCorsOriginAllowed(origin, env)) return response;
+  const headers = new Headers(response.headers);
+  headers.set('Access-Control-Allow-Origin', origin);
+  headers.set('Access-Control-Allow-Credentials', 'true');
+  headers.append('Vary', 'Origin');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(
     request: Request,
@@ -238,7 +280,8 @@ export default {
 
       if (url.pathname === '/api/servers' || url.pathname.startsWith('/api/servers/')) {
         // await 后 DO 抛出的异常才能被本函数的 catch 转成 JSON，而不是边缘的 1101 页面。
-        return await handleServersRoute(request, url, env);
+        if (request.method === 'OPTIONS') return handleCorsPreflight(request, env);
+        return applyCors(await handleServersRoute(request, url, env), request, env);
       }
 
       // ==================== Theme Routes（登录用户跨环境同步） ====================

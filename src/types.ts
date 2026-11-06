@@ -187,6 +187,8 @@ export interface Env {
   GITHUB_ALLOWED_USER_IDS?: string;
   // 是否强制 GitHub 登录后才能使用 SSH（可选，默认 false）
   REQUIRE_GITHUB_AUTH?: string;
+  // 跨源只读白名单（可选；逗号分隔的完整 Origin，如 "https://vip.ztvps.com"）
+  CORS_ALLOWED_ORIGINS?: string;
   BASE_URL?: string;
   // 主机密钥验证严格模式（默认 true，设为 false 可跳过签名验证失败）
   STRICT_HOST_KEY_VERIFY?: string;
